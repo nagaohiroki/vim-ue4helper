@@ -50,7 +50,12 @@ def dumps():
 
 
 def open_project():
-    subprocess(get_uproject(get_param()), shell=True)
+    subprocess.call(get_uproject(get_param()), shell=True)
+
+
+def vs_open_file(path):
+    dev = os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv.exe')
+    subprocess.call([dev, '/edit', path], shell=True)
 
 
 def generate_project():
@@ -119,7 +124,10 @@ def get_vspath():
     try:
         proc = subprocess.check_output('vswhere', encoding='cp932')
     except FileNotFoundError:
-        return os.getenv('VS_INSTALL_PATH')
+        vs15 = os.getenv('VS150COMNTOOLS')
+        if vs15:
+            return os.path.dirname(vs15)
+        return
     prefix = 'installationPath: '
     for line in proc.split('\n'):
         if line.startswith(prefix):
@@ -127,14 +135,18 @@ def get_vspath():
 
 
 def main():
-    if '-build' in sys.argv:
-        build()
-    if '-generate_project' in sys.argv:
-        generate_project()
-    if '-dumps' in sys.argv:
-        dumps()
-    if '-open_project' in sys.argv:
-        open_project()
+    for arg in sys.argv:
+        if arg == '-build':
+            build()
+        if arg == '-generate_project':
+            generate_project()
+        if arg == '-dumps':
+            dumps()
+        if arg == '-open_project':
+            open_project()
+        vs_open_prefix = '-vs_open_file='
+        if arg.startswith(vs_open_prefix):
+            vs_open_file(arg.replace(vs_open_prefix, ''))
 
 
 if __name__ == '__main__':
