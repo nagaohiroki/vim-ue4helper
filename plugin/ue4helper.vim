@@ -12,10 +12,10 @@ function! s:UE4Dumps()
 	call setqflist(s:ue4_dumps, 'r')
 	cwindow
 endfunction
-let s:py_cmd = 'term python ' . s:py_path
-command! UE4Build execute s:py_cmd . ' -build'
-command! UE4GenerateProject execute s:py_cmd . ' -generate_project'
+command! UE4Build execute 'term python ' . s:py_path . ' -build'
+command! UE4GenerateProject execute 'term python ' . s:py_path  . ' -generate_project'
 command! UE4OpenProject execute s:py_cmd . ' -open_project'
 command! UE4Dumps call s:UE4Dumps()
+command! VSOpen execute 'term ++close python ' . s:py_path . ' -vs_open_file=' . fnameescape(expand('%:p'))
 let &cpo = s:save_cpo
 unlet s:save_cpo
