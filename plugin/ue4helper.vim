@@ -17,6 +17,7 @@ command! UE4GenerateProject execute 'term python ' . s:py_path  . ' -generate_pr
 command! UE4OpenProject execute s:py_cmd . ' -open_project'
 command! UE4Dumps call s:UE4Dumps()
 command! VSOpen execute 'term ++close python ' . s:py_path . ' -vs_open_file=' . fnameescape(expand('%:p'))
-command! RunSln execute 'term python ' . s:py_path . ' -run_sln'
+command! RunSln execute 'term ++close python ' . s:py_path . ' -run_sln'
+command! OpenSln execute 'term ++close python ' . s:py_path . ' -open_sln'
 let &cpo = s:save_cpo
 unlet s:save_cpo

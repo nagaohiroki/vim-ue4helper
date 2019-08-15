@@ -49,13 +49,17 @@ def dumps():
         vim.command(':let s:ue4_dumps = ' + str(logs))
 
 
-def open_project():
-    subprocess.call(get_uproject(get_param()), shell=True)
+def get_sln_path():
+    param = get_param()
+    engine = param['engine_path']
+    generate_project_cmd = 'GenerateProject.bat'
+    if os.path.exists(os.path.join(engine, generate_project_cmd)):
+        return os.path.join(engine, 'UE4.sln')
+    return os.path.join(param['project_path'], param['project'] + '.sln')
 
 
-def vs_open_file(path):
-    dev = os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv.exe')
-    subprocess.call([dev, '/edit', path], shell=True)
+def get_devenv():
+    return os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv.exe')
 
 
 def generate_project():
@@ -143,10 +147,15 @@ def main():
         if arg == '-dumps':
             dumps()
         if arg == '-open_project':
-            open_project()
+            subprocess.call(get_uproject(get_param()), shell=True)
         vs_open_prefix = '-vs_open_file='
         if arg.startswith(vs_open_prefix):
-            vs_open_file(arg.replace(vs_open_prefix, ''))
+            file_path = arg.replace(vs_open_prefix, '')
+            subprocess.call([get_devenv(), '/edit', file_path], shell=True)
+        if arg == '-open_sln':
+            subprocess.call(get_sln_path(), shell=True)
+        if arg == '-run_sln':
+            subprocess.call([get_devenv(), '/r', get_sln_path()], shell=True)
 
 
 if __name__ == '__main__':
