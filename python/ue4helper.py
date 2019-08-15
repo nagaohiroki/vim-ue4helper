@@ -41,7 +41,7 @@ def dumps():
             if ' error ' in line:
                 match = re.match(pattern, line)
                 logs.append({
-                    'filename': match[1].replace('\\', '/'),
+                    'filename': match[1].replace(os.path.sep, os.path.altsep),
                     'lnum': match[2],
                     'text': match[3],
                     'type': 'E'})
@@ -70,7 +70,7 @@ def generate_project():
     os.chdir(work_dir)
     subprocess.call(generate_project_cmd, shell=True)
     subprocess.call(generate_project_cmd + ['-CMakefile'], shell=True)
-    cmake_proc = create_compiler_commands(param['vs_common_path'])
+    cmake_proc = create_compiler_commands()
     ctags_proc = create_ctags([
         os.path.join(engine, 'Engine', 'Source'),
         os.path.join(project, 'Source')])
@@ -78,15 +78,16 @@ def generate_project():
     ctags_proc.wait()
 
 
-def create_compiler_commands(vs_common_path):
+def create_compiler_commands():
     cmd = [
-        os.path.join(vs_common_path, 'Common7', 'Tools', 'VsDevCmd'),
-        '&',
         'cmake',
         '-G',
         'Ninja',
         '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
         '.']
+    vsdevcmd = os.path.join(get_vspath(), 'Common7', 'Tools', 'VsDevCmd')
+    if os.path.exists(vsdevcmd):
+        return subprocess.Popen([vsdevcmd, '&'], cmd, shell=True)
     return subprocess.Popen(cmd, shell=True)
 
 
@@ -112,6 +113,17 @@ def get_engine_batch(path):
 
 def get_uproject(dic):
     return os.path.join(dic['project_path'], dic['project'] + '.uproject')
+
+
+def get_vspath():
+    try:
+        proc = subprocess.check_output('vswhere', encoding='cp932')
+    except FileNotFoundError:
+        return os.getenv('VS_INSTALL_PATH')
+    prefix = 'installationPath: '
+    for line in proc.split('\n'):
+        if line.startswith(prefix):
+            return line.replace(prefix, '')
 
 
 def main():
