@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     is_vim = False
 
 
-def build():
+def build(config):
     param = get_param()
     engine = param['engine_path']
     project_name = param['project']
@@ -19,7 +19,7 @@ def build():
         get_engine_batch(engine),
         project_name + 'Editor',
         'Win64',
-        'Development',
+        config,
         '-Project=' + get_uproject(param),
         '-WaitMutex',
         '-FromMsBuild']
@@ -59,7 +59,7 @@ def get_sln_path():
 
 
 def get_devenv():
-    return os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv.exe')
+    return os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv')
 
 
 def generate_project():
@@ -141,7 +141,7 @@ def get_vspath():
 def main():
     for arg in sys.argv:
         if arg == '-build':
-            build()
+            build('Development')
         if arg == '-generate_project':
             generate_project()
         if arg == '-dumps':
