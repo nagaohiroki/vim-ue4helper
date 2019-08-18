@@ -52,8 +52,7 @@ def dumps():
 def get_sln_path():
     param = get_param()
     engine = param['engine_path']
-    generate_project_cmd = 'GenerateProject.bat'
-    if os.path.exists(os.path.join(engine, generate_project_cmd)):
+    if os.path.exists(os.path.join(engine, get_generate_project_file_bat())):
         return os.path.join(engine, 'UE4.sln')
     return os.path.join(param['project_path'], param['project'] + '.sln')
 
@@ -67,7 +66,7 @@ def generate_project():
     engine = param['engine_path']
     project = param['project_path']
     work_dir = engine
-    generate_project_cmd = 'GenerateProject.bat'
+    generate_project_cmd = get_generate_project_file_bat()
     if not os.path.exists(os.path.join(engine, generate_project_cmd)):
         work_dir = project
         generate_project_cmd = [
@@ -111,9 +110,9 @@ def create_ctags(source_path):
 
 
 def get_param():
-    home = os.path.expanduser('~')
-    path = os.path.join(home, 'ue4_project.json')
-    return json.load(codecs.open(path, 'r', 'utf-8'))
+    path = os.path.join(os.path.expanduser('~'), 'ue4_project.json')
+    with codecs.open(path, 'r', 'utf-8') as f:
+        return json.load(f)
 
 
 def get_engine_batch(path):
@@ -122,6 +121,10 @@ def get_engine_batch(path):
 
 def get_uproject(dic):
     return os.path.join(dic['project_path'], dic['project'] + '.uproject')
+
+
+def get_generate_project_file_bat():
+    return 'GenerateProjectFiles.bat'
 
 
 def get_vspath():
