@@ -131,7 +131,7 @@ def get_vspath():
     try:
         proc = subprocess.check_output('vswhere', encoding='cp932')
     except FileNotFoundError:
-        vs15 = os.getenv('VS150COMNTOOLS')
+        vs15 = os.getenv('VS140COMNTOOLS')
         if vs15:
             return os.path.dirname(vs15)
         return
