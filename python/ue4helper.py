@@ -11,13 +11,10 @@ except ModuleNotFoundError:
     is_vim = False
 
 
-def build(config):
-    param = get_param()
-    engine = param['engine_path']
-    project_name = param['project']
+def build(param, config):
     cmd = [
-        get_engine_batch(engine),
-        project_name + 'Editor',
+        get_build_batch(param),
+        param['project'] + 'Editor',
         'Win64',
         config,
         '-Project=' + get_uproject(param),
@@ -26,8 +23,7 @@ def build(config):
     subprocess.call(cmd, shell=True)
 
 
-def dumps():
-    param = get_param()
+def dumps(param):
     logs = []
     log = os.path.join(
         param['engine_path'],
@@ -49,11 +45,9 @@ def dumps():
         vim.command(':let s:ue4_dumps = ' + str(logs))
 
 
-def get_sln_path():
-    param = get_param()
-    engine = param['engine_path']
-    if os.path.exists(os.path.join(engine, get_generate_project_file_bat())):
-        return os.path.join(engine, 'UE4.sln')
+def get_sln_path(param):
+    if is_in_engine(param):
+        return os.path.join(param['engine_path'], 'UE4.sln')
     return os.path.join(param['project_path'], param['project'] + '.sln')
 
 
@@ -61,52 +55,41 @@ def get_devenv():
     return os.path.join(get_vspath(), 'Common7', 'IDE', 'devenv')
 
 
-def generate_project():
-    param = get_param()
-    engine = param['engine_path']
-    project = param['project_path']
-    work_dir = engine
-    generate_project_cmd = get_generate_project_file_bat()
-    if not os.path.exists(os.path.join(engine, generate_project_cmd)):
-        work_dir = project
-        generate_project_cmd = [
-            get_engine_batch(engine),
-            '-projectfiles',
-            '-project=' + get_uproject(param),
-            '-game',
-            '-rocket']
+def generate_project(param):
+    work_dir = param['engine_path']
+    generate_project_cmd = ['GenerateProjectFiles.bat']
+    if not is_in_engine(param):
+        work_dir = param['project_path']
+        generate_project_cmd = get_generate_project_cmd(param)
     os.chdir(work_dir)
     subprocess.call(generate_project_cmd, shell=True)
     subprocess.call(generate_project_cmd + ['-CMakefile'], shell=True)
-    cmake_proc = create_compiler_commands()
-    ctags_proc = create_ctags([
-        os.path.join(engine, 'Engine', 'Source'),
-        os.path.join(project, 'Source')])
+    cmake_proc = subprocess.Popen(get_compiler_cmd(), shell=True)
+    ctags_proc = subprocess.Popen(get_ctags_cmd(param), shell=True)
     cmake_proc.wait()
     ctags_proc.wait()
+    print('done')
 
 
-def create_compiler_commands():
-    cmd = [
-        'cmake',
-        '-G',
-        'Ninja',
-        '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
-        '.']
+def get_generate_project_cmd(param):
+    uproject = get_uproject(param)
+    build = get_build_batch(param)
+    return [build, '-projectfiles', '-project=' + uproject, '-game', '-rocket']
+
+
+def get_compiler_cmd():
+    cmd = ['cmake', '-G', 'Ninja', '-DCMAKE_EXPORT_COMPILE_COMMANDS=1', '.']
     vsdevcmd = os.path.join(get_vspath(), 'Common7', 'Tools', 'VsDevCmd')
     if os.path.exists(vsdevcmd):
-        return subprocess.Popen([vsdevcmd, '&'], cmd, shell=True)
-    return subprocess.Popen(cmd, shell=True)
+        return [vsdevcmd, '&'] + cmd
+    return cmd
 
 
-def create_ctags(source_path):
-    cmd = [
-        'ctags',
-        '--languages=c++',
-        '--output-format=e-ctags']
-    for path in source_path:
+def get_ctags_cmd(param):
+    cmd = ['ctags', '--languages=c++', '--output-format=e-ctags']
+    for path in get_src_dirs(param):
         cmd += ['-R', path]
-    return subprocess.Popen(cmd, shell=True)
+    return cmd
 
 
 def get_param():
@@ -115,55 +98,81 @@ def get_param():
         return json.load(f)
 
 
-def get_engine_batch(path):
-    return os.path.join(path, 'Engine', 'Build', 'BatchFiles', 'Build')
+def is_in_engine(param):
+    return param['engine_path'] == os.path.dirname(param['project_path'])
+
+
+def get_build_batch(param):
+    engine = param['engine_path']
+    return os.path.join(engine, 'Engine', 'Build', 'BatchFiles', 'Build')
 
 
 def get_uproject(dic):
     return os.path.join(dic['project_path'], dic['project'] + '.uproject')
 
 
-def get_generate_project_file_bat():
-    return 'GenerateProjectFiles.bat'
+def get_src_dirs(param):
+    src = 'Source'
+    engine = os.path.join(param['engine_path'], 'Engine')
+    project = param['project_path']
+    src_dirs = []
+    for root_path in [engine, project]:
+        if not os.path.exists(root_path):
+            continue
+        src_dirs += [os.path.join(root_path, src)]
+    return src_dirs
 
 
 def get_vspath():
+    vs15 = get_vs15path()
+    if vs15:
+        return vs15
+    return get_vs14path()
+
+
+def get_vs15path():
+    try:
+        cmd = ['vswhere', '-format', 'json']
+        proc = subprocess.check_output(cmd, encoding='cp932')
+    except FileNotFoundError:
+        return
+    dic = json.loads(proc)
+    if len(dic) < 1:
+        return
+    tag = 'installationPath'
+    if tag in dic[0]:
+        return dic[0][tag]
+
+
+def get_vs14path():
     vs14path = os.getenv('VS140COMNTOOLS')
     if vs14path:
-        vs14path = os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
-    try:
-        proc = subprocess.check_output('vswhere', encoding='cp932')
-    except FileNotFoundError:
-        return vs14path
-    prefix = 'installationPath: '
-    vs15path = None
-    for line in proc.split('\n'):
-        if line.startswith(prefix):
-            vs15path = line.replace(prefix, '')
-            break
-    if vs15path:
-        return vs15path
-    return vs14path
+        return os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
+
+
+def action(arg):
+    param = get_param()
+    if arg == '-build':
+        build(param, 'Development')
+    if arg == '-generate_project':
+        generate_project(param)
+    if arg == '-dumps':
+        dumps(param)
+    if arg == '-open_project':
+        subprocess.call(get_uproject(param), shell=True)
+    vs_open_prefix = '-vs_open_file='
+    if arg.startswith(vs_open_prefix):
+        file_path = arg.replace(vs_open_prefix, '')
+        subprocess.call([get_devenv(), '/edit', file_path], shell=True)
+    if arg == '-open_sln':
+        subprocess.call(get_sln_path(param), shell=True)
+    if arg == '-run_sln':
+        subprocess.call([get_devenv(), '/r', get_sln_path(param)], shell=True)
 
 
 def main():
     for arg in sys.argv:
-        if arg == '-build':
-            build('Development')
-        if arg == '-generate_project':
-            generate_project()
-        if arg == '-dumps':
-            dumps()
-        if arg == '-open_project':
-            subprocess.call(get_uproject(get_param()), shell=True)
-        vs_open_prefix = '-vs_open_file='
-        if arg.startswith(vs_open_prefix):
-            file_path = arg.replace(vs_open_prefix, '')
-            subprocess.call([get_devenv(), '/edit', file_path], shell=True)
-        if arg == '-open_sln':
-            subprocess.call(get_sln_path(), shell=True)
-        if arg == '-run_sln':
-            subprocess.call([get_devenv(), '/r', get_sln_path()], shell=True)
+        action(arg)
 
 
 if __name__ == '__main__':
