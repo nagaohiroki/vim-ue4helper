@@ -128,17 +128,22 @@ def get_generate_project_file_bat():
 
 
 def get_vspath():
+    vs14path = os.getenv('VS140COMNTOOLS')
+    if vs14path:
+        vs14path = os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
     try:
         proc = subprocess.check_output('vswhere', encoding='cp932')
     except FileNotFoundError:
-        vs15 = os.getenv('VS140COMNTOOLS')
-        if vs15:
-            return os.path.dirname(vs15)
-        return
+        return vs14path
     prefix = 'installationPath: '
+    vs15path = None
     for line in proc.split('\n'):
         if line.startswith(prefix):
-            return line.replace(prefix, '')
+            vs15path = line.replace(prefix, '')
+            break
+    if vs15path:
+        return vs15path
+    return vs14path
 
 
 def main():
