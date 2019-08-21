@@ -45,6 +45,11 @@ def dumps(param):
         vim.command(':let s:ue4_dumps = ' + str(logs))
 
 
+def fzf(path):
+    if is_vim:
+        vim.command(':FZF ' + os.path.join(path, 'Source'))
+
+
 def get_sln_path(param):
     if is_in_engine(param):
         return os.path.join(param['engine_path'], 'UE4.sln')
@@ -168,6 +173,10 @@ def action(arg):
         subprocess.call(get_sln_path(param), shell=True)
     if arg == '-run_sln':
         subprocess.call([get_devenv(), '/r', get_sln_path(param)], shell=True)
+    if arg == '-fzf_project':
+        fzf(param['project_path'])
+    if arg == '-fzf_engine':
+        fzf(os.path.join(param['engine_path'], 'Engine'))
 
 
 def main():
