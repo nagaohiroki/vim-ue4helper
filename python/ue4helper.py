@@ -31,16 +31,21 @@ def dumps(param):
         'Programs',
         'UnrealBuildTool',
         'Log.txt')
-    pattern = re.compile(r".*?:   (.*?)\(([0-9]+)\): (.*)")
+    pattern = re.compile(r".*?([A-Z]:.*?)\(([0-9]+)\): (.*)")
     with codecs.open(log, 'r', 'utf-8') as file:
         for line in file.readlines():
-            if ' error ' in line:
-                match = re.match(pattern, line)
-                logs.append({
-                    'filename': match[1].replace(os.path.sep, os.path.altsep),
-                    'lnum': match[2],
-                    'text': match[3],
-                    'type': 'E'})
+            match = re.match(pattern, line)
+            if not match:
+                continue
+            error_type = 'E'
+            text = match[3]
+            if text.startswith('warning') or text.startswith('note'):
+                error_type = 'W'
+            logs.append({
+                'filename': match[1].replace(os.path.sep, os.path.altsep),
+                'lnum': match[2],
+                'text': text,
+                'type': error_type})
     if is_vim:
         vim.command(':let s:ue4_dumps = ' + str(logs))
 
