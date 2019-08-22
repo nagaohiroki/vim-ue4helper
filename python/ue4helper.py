@@ -11,12 +11,12 @@ except ModuleNotFoundError:
     is_vim = False
 
 
-def build(param, config):
+def build(param):
     cmd = [
         get_build_batch(param),
         param['project'] + 'Editor',
         'Win64',
-        config,
+        param['build'],
         '-Project=' + get_uproject(param),
         '-WaitMutex',
         '-FromMsBuild']
@@ -31,7 +31,7 @@ def dumps(param):
         'Programs',
         'UnrealBuildTool',
         'Log.txt')
-    pattern = re.compile(r".*?:   (.*?)\(([0-9]+)\): (.*)")
+    pattern = re.compile(r".*?: (.*?)\(([0-9]+)\): (.*)")
     with codecs.open(log, 'r', 'utf-8') as file:
         for line in file.readlines():
             if ' error ' in line:
@@ -158,7 +158,7 @@ def get_vs14path():
 def action(arg):
     param = get_param()
     if arg == '-build':
-        build(param, 'Development')
+        build(param)
     if arg == '-generate_project':
         generate_project(param)
     if arg == '-dumps':
