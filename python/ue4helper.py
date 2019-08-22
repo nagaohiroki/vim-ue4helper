@@ -99,8 +99,15 @@ def get_compiler_cmd():
 
 
 def get_ctags_cmd(param):
-    cmd = ['ctags', '--languages=c++', '--output-format=e-ctags']
-    for path in get_src_dirs(param):
+    cmd = [
+        'ctags',
+        '--languages=c++',
+        '--exclude=Intermediate',
+        '--output-format=e-ctags']
+    src = [
+        os.path.join(param['engine_path'], 'Engine'),
+        param['project_path']]
+    for path in src:
         cmd += ['-R', path]
     return cmd
 
@@ -122,18 +129,6 @@ def get_build_batch(param):
 
 def get_uproject(dic):
     return os.path.join(dic['project_path'], dic['project'] + '.uproject')
-
-
-def get_src_dirs(param):
-    src = 'Source'
-    engine = os.path.join(param['engine_path'], 'Engine')
-    project = param['project_path']
-    src_dirs = []
-    for root_path in [engine, project]:
-        if not os.path.exists(root_path):
-            continue
-        src_dirs += [os.path.join(root_path, src)]
-    return src_dirs
 
 
 def get_vspath():
