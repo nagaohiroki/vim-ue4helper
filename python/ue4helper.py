@@ -12,11 +12,14 @@ except ModuleNotFoundError:
 
 
 def build(param):
+    conf = 'Development'
+    if 'build' in param:
+        conf = param['build']
     cmd = [
         get_build_batch(param),
         param['project'] + 'Editor',
         'Win64',
-        param['build'],
+        conf,
         '-Project=' + get_uproject(param),
         '-WaitMutex',
         '-FromMsBuild']
@@ -155,6 +158,27 @@ def get_vs14path():
         return os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
 
 
+def open_project(param):
+    editor = 'UE4Editor'
+    debug = None
+    if 'build' in param:
+        build = param['build']
+        if build == 'DebugGame':
+            debug = '-debug'
+        if build == 'Debug':
+            editor = 'UE4Editor-Win64-Debug'
+            debug = '-debug'
+    ue4 = os.path.join(
+        param['engine_path'],
+        'Engine',
+        'Binaries',
+        'Win64',
+        editor
+    )
+    cmd = [ue4, param['project'], debug]
+    subprocess.call(cmd, shell=True)
+
+
 def action(arg):
     param = get_param()
     if arg == '-build':
@@ -164,7 +188,7 @@ def action(arg):
     if arg == '-dumps':
         dumps(param)
     if arg == '-open_project':
-        subprocess.call(get_uproject(param), shell=True)
+        open_project(param)
     vs_open_prefix = '-vs_open_file='
     if arg.startswith(vs_open_prefix):
         file_path = arg.replace(vs_open_prefix, '')
