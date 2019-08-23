@@ -175,7 +175,9 @@ def open_project(param):
         'Win64',
         editor
     )
-    cmd = [ue4, param['project'], debug]
+    cmd = [ue4, param['project']]
+    if debug:
+        cmd += debug
     subprocess.call(cmd, shell=True)
 
 
