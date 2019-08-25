@@ -159,6 +159,13 @@ def get_vs14path():
 
 
 def open_project(param):
+    if is_in_engine(param):
+        open_project_in_engine(param)
+        return
+    open_project_only(param)
+
+
+def open_project_in_engine(param):
     editor = 'UE4Editor'
     debug = None
     if 'build' in param:
@@ -176,6 +183,20 @@ def open_project(param):
         editor
     )
     cmd = [ue4, param['project']]
+    if debug:
+        cmd += debug
+    subprocess.call(cmd, shell=True)
+
+
+def open_project_only(param):
+    debug = None
+    if 'build' in param:
+        build = param['build']
+        if build == 'DebugGame':
+            debug = '-debug'
+        if build == 'Debug':
+            debug = '-debug'
+    cmd = get_uproject(param)
     if debug:
         cmd += debug
     subprocess.call(cmd, shell=True)
