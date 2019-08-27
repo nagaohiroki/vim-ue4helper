@@ -34,23 +34,30 @@ def dumps(param):
         'Programs',
         'UnrealBuildTool',
         'Log.txt')
-    pattern = re.compile(r".*?([A-Z]:.*?)\(([0-9]+)\): (.*)")
+    pattern_msvc = re.compile(r".*?([A-Z]:.*?)\(([0-9]+)\): (.*)")
+    pattern_clang = re.compile(r".*?([A-Z]:.*?)\(([0-9]+),([0-9]+)\): (.*)")
     with codecs.open(log, 'r', 'utf-8') as file:
         for line in file.readlines():
-            match = re.match(pattern, line)
-            if not match:
-                continue
-            error_type = 'E'
-            text = match[3]
-            if text.startswith('warning') or text.startswith('note'):
-                error_type = 'W'
-            logs.append({
-                'filename': match[1].replace(os.path.sep, os.path.altsep),
-                'lnum': match[2],
-                'text': text,
-                'type': error_type})
+            match = re.match(pattern_msvc, line)
+            dic = {}
+            if match:
+                dic['text'] = match[3]
+            else:
+                match = re.match(pattern_clang, line)
+                if match:
+                    dic['col'] = match[3]
+                    dic['text'] = match[4]
+                else:
+                    continue
+            dic['filename'] = match[1].replace(os.path.sep, os.path.altsep)
+            dic['lnum'] = match[2]
+            if 'warning' in dic['filename'] or 'note' in dic['filename']:
+                dic['type'] = 'W'
+            else:
+                dic['type'] = 'E'
+            logs.append(dic)
     if is_vim:
-        vim.command(':let s:ue4_dumps = ' + str(logs))
+        vim.command(':call setqflist(' + str(logs) + ')')
 
 
 def fzf(path):
