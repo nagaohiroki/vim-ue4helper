@@ -165,10 +165,12 @@ def get_vs14path():
 
 
 def open_project(param):
+    cmd = None
     if is_in_engine(param):
-        open_project_in_engine(param)
-        return
-    open_project_only(param)
+        cmd = open_project_in_engine(param)
+    else:
+        cmd = open_project_only(param)
+    subprocess.call(cmd, shell=True)
 
 
 def open_project_in_engine(param):
@@ -190,8 +192,8 @@ def open_project_in_engine(param):
     )
     cmd = [ue4, param['project']]
     if debug:
-        cmd += debug
-    subprocess.call(cmd, shell=True)
+        cmd += [debug]
+    return cmd
 
 
 def open_project_only(param):
@@ -204,8 +206,8 @@ def open_project_only(param):
             debug = '-debug'
     cmd = get_uproject(param)
     if debug:
-        cmd += debug
-    subprocess.call(cmd, shell=True)
+        cmd += [debug]
+    return cmd
 
 
 def action(arg):
