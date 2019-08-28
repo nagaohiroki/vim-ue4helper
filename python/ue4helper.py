@@ -51,10 +51,9 @@ def dumps(param):
                     continue
             dic['filename'] = match[1].replace(os.path.sep, os.path.altsep)
             dic['lnum'] = match[2]
-            if 'warning' in dic['filename'] or 'note' in dic['filename']:
+            dic['type'] = 'E'
+            if 'warning' in dic['text'] or 'note' in dic['text']:
                 dic['type'] = 'W'
-            else:
-                dic['type'] = 'E'
             logs.append(dic)
     if is_vim:
         vim.command(':call setqflist(' + str(logs) + ')')
