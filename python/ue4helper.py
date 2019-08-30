@@ -170,7 +170,7 @@ def open_project(param):
         cmd = open_project_in_engine(param)
     else:
         cmd = open_project_only(param)
-    subprocess.call(cmd, shell=True)
+    subprocess.Popen(cmd, shell=True)
 
 
 def open_project_in_engine(param):
