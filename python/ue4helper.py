@@ -1,9 +1,10 @@
 import json
 import codecs
 import os
-import sys
 import subprocess
 import re
+import argparse
+import sys
 is_vim = True
 try:
     import vim
@@ -11,25 +12,21 @@ except ModuleNotFoundError:
     is_vim = False
 
 
-def build(param):
-    conf = 'Development'
-    if 'build' in param:
-        conf = param['build']
-    cmd = [
+def build(param, config):
+    return [
         get_build_batch(param),
-        param['project'] + 'Editor',
+        get_project_name(param) + 'Editor',
         'Win64',
-        conf,
-        '-Project=' + get_uproject(param),
+        config,
+        '-Project=' + param['project'],
         '-WaitMutex',
         '-FromMsBuild']
-    subprocess.call(cmd, shell=True)
 
 
 def dumps(param):
     logs = []
     log = os.path.join(
-        param['engine_path'],
+        param['engine'],
         'Engine',
         'Programs',
         'UnrealBuildTool',
@@ -59,15 +56,27 @@ def dumps(param):
         vim.command(':call setqflist(' + str(logs) + ')')
 
 
-def fzf(path):
+def fzf(param, key):
+    path = None
+    if key == 'engine':
+        path = os.path.join(param[key], 'Engine')
+    if key == 'project':
+        path = os.path.dirname(param[key])
+    if not path:
+        return
+    path = os.path.join(path, 'Source')
+    cmd = ':FZF ' + path.replace(os.path.sep, os.path.altsep)
     if is_vim:
-        vim.command(':FZF ' + os.path.join(path, 'Source'))
+        vim.command(cmd)
+        return
+    print(cmd)
 
 
 def get_sln_path(param):
     if is_in_engine(param):
-        return os.path.join(param['engine_path'], 'UE4.sln')
-    return os.path.join(param['project_path'], param['project'] + '.sln')
+        return os.path.join(param['engine'], 'UE4.sln')
+    base, _ = os.path.splitext(param['project'])
+    return base + '.sln'
 
 
 def get_devenv():
@@ -75,10 +84,10 @@ def get_devenv():
 
 
 def generate_project(param):
-    work_dir = param['engine_path']
+    work_dir = param['engine']
     generate_project_cmd = ['GenerateProjectFiles.bat']
     if not is_in_engine(param):
-        work_dir = param['project_path']
+        work_dir = os.path.dirname(param['project'])
         generate_project_cmd = get_generate_project_cmd(param)
     os.chdir(work_dir)
     subprocess.call(generate_project_cmd, shell=True)
@@ -91,7 +100,7 @@ def generate_project(param):
 
 
 def get_generate_project_cmd(param):
-    uproject = get_uproject(param)
+    uproject = param['project']
     build = get_build_batch(param)
     return [build, '-projectfiles', '-project=' + uproject, '-game', '-rocket']
 
@@ -111,8 +120,8 @@ def get_ctags_cmd(param):
         '--exclude=Intermediate',
         '--output-format=e-ctags']
     src = [
-        os.path.join(param['engine_path'], 'Engine'),
-        param['project_path']]
+        os.path.join(param['engine'], 'Engine'),
+        param['project']]
     for path in src:
         cmd += ['-R', path]
     return cmd
@@ -125,16 +134,17 @@ def get_param():
 
 
 def is_in_engine(param):
-    return param['engine_path'] == os.path.dirname(param['project_path'])
+    root = os.path.dirname(os.path.dirname(param['project']))
+    return param['engine'] == root
 
 
 def get_build_batch(param):
-    engine = param['engine_path']
+    engine = param['engine']
     return os.path.join(engine, 'Engine', 'Build', 'BatchFiles', 'Build')
 
 
-def get_uproject(dic):
-    return os.path.join(dic['project_path'], dic['project'] + '.uproject')
+def get_project_name(param):
+    return os.path.splitext(os.path.basename(param['project']))[0]
 
 
 def get_vspath():
@@ -164,79 +174,84 @@ def get_vs14path():
         return os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
 
 
-def open_project(param):
-    cmd = None
+def get_project_cmd(param, config):
     if is_in_engine(param):
-        cmd = open_project_in_engine(param)
-    else:
-        cmd = open_project_only(param)
-    subprocess.Popen(cmd, shell=True)
+        return open_project_in_engine(param, config)
+    return open_project_only(param, config)
 
 
-def open_project_in_engine(param):
-    editor = 'UE4Editor'
-    debug = None
-    if 'build' in param:
-        build = param['build']
-        if build == 'DebugGame':
-            debug = '-debug'
-        if build == 'Debug':
-            editor = 'UE4Editor-Win64-Debug'
-            debug = '-debug'
+def open_project_in_engine(param, config):
     ue4 = os.path.join(
-        param['engine_path'],
+        param['engine'],
         'Engine',
         'Binaries',
         'Win64',
-        editor
-    )
-    cmd = [ue4, param['project']]
-    if debug:
-        cmd += [debug]
+        'UE4Editor')
+    cmd = [ue4, get_project_name(param)]
+    if config == '-debug':
+        cmd += [config]
     return cmd
 
 
-def open_project_only(param):
-    debug = None
-    if 'build' in param:
-        build = param['build']
-        if build == 'DebugGame':
-            debug = '-debug'
-        if build == 'Debug':
-            debug = '-debug'
-    cmd = get_uproject(param)
-    if debug:
-        cmd += [debug]
+def open_project_only(param, config):
+    cmd = param['project']
+    if config == '-debug':
+        cmd + [config]
     return cmd
+
+
+def info(param):
+    print(is_in_engine(param))
+    print(get_sln_path(param))
+    print(get_devenv())
+    print(get_generate_project_cmd(param))
+    print(get_compiler_cmd())
+    print(get_ctags_cmd(param))
+    print(get_build_batch(param))
+    print(get_project_name(param))
+    print(get_vspath())
+    print(get_project_cmd(param, None))
+
+
+def arguments():
+    parser = argparse.ArgumentParser(description='ue4')
+    parser.add_argument('--info', action='store_true')
+    parser.add_argument('--build')
+    parser.add_argument('--generateproject', action='store_true')
+    parser.add_argument('--dumps', action='store_true')
+    parser.add_argument('--openproject')
+    parser.add_argument('--vsopen')
+    parser.add_argument('--opensln', action='store_true')
+    parser.add_argument('--runsln', action='store_true')
+    parser.add_argument('--fzf', metavar='project engine')
+    args, _ = parser.parse_known_args(sys.argv)
+    action(args)
 
 
 def action(arg):
     param = get_param()
-    if arg == '-build':
-        build(param)
-    if arg == '-generate_project':
+    if arg.info:
+        info(param)
+    if arg.generateproject:
         generate_project(param)
-    if arg == '-dumps':
+    if arg.build:
+        subprocess.call(build(param, arg.build), shell=True)
+    if arg.dumps:
         dumps(param)
-    if arg == '-open_project':
-        open_project(param)
-    vs_open_prefix = '-vs_open_file='
-    if arg.startswith(vs_open_prefix):
-        file_path = arg.replace(vs_open_prefix, '')
-        subprocess.call([get_devenv(), '/edit', file_path], shell=True)
-    if arg == '-open_sln':
+    if arg.openproject:
+        subprocess.call(get_project_cmd(param, arg.openproject), shell=True)
+    if arg.vsopen:
+        subprocess.call([get_devenv(), '/edit', arg.vsopen], shell=True)
+    if arg.opensln:
         subprocess.call(get_sln_path(param), shell=True)
-    if arg == '-run_sln':
+    if arg.runsln:
         subprocess.call([get_devenv(), '/r', get_sln_path(param)], shell=True)
-    if arg == '-fzf_project':
-        fzf(param['project_path'])
-    if arg == '-fzf_engine':
-        fzf(os.path.join(param['engine_path'], 'Engine'))
+    if arg.fzf:
+        fzf(param, arg.fzf)
 
 
 def main():
-    for arg in sys.argv:
-        action(arg)
+    arguments()
 
 
 if __name__ == '__main__':
