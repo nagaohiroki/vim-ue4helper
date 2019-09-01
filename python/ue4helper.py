@@ -239,7 +239,7 @@ def action(arg):
     if arg.dumps:
         dumps(param)
     if arg.openproject:
-        subprocess.call(get_project_cmd(param, arg.openproject), shell=True)
+        subprocess.Popen(get_project_cmd(param, arg.openproject), shell=True)
     if arg.vsopen:
         subprocess.call([get_devenv(), '/edit', arg.vsopen], shell=True)
     if arg.opensln:
