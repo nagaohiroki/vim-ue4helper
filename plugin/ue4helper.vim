@@ -17,7 +17,6 @@ line = vim.eval("line('.')")
 col = vim.eval("col('.')")
 filename = vim.eval("expand('%:p')")
 dte = win32com.client.GetActiveObject("VisualStudio.DTE")
-dte.MainWindow.Activate
 dte.ItemOperations.OpenFile(filename)
 dte.ActiveDocument.Selection.MoveToLineAndOffset(line, col)
 EOF
