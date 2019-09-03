@@ -13,12 +13,20 @@ except ModuleNotFoundError:
 
 
 def build(param, config):
+    if is_in_engine(param):
+        return [
+            get_build_batch(param),
+            get_project_name(param) + 'Editor',
+            'Win64',
+            config,
+            '-WaitMutex',
+            '-FromMsBuild']
     return [
         get_build_batch(param),
         get_project_name(param) + 'Editor',
         'Win64',
         config,
-        # '-Project=' + param['project'],
+        '-Project=' + param['project'],
         '-WaitMutex',
         '-FromMsBuild']
 
