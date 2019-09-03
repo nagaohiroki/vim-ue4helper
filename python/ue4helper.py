@@ -18,7 +18,7 @@ def build(param, config):
         get_project_name(param) + 'Editor',
         'Win64',
         config,
-        '-Project=' + param['project'],
+        # '-Project=' + param['project'],
         '-WaitMutex',
         '-FromMsBuild']
 
@@ -220,7 +220,6 @@ def arguments():
     parser.add_argument('--generateproject', action='store_true')
     parser.add_argument('--dumps', action='store_true')
     parser.add_argument('--openproject')
-    parser.add_argument('--vsopen')
     parser.add_argument('--opensln', action='store_true')
     parser.add_argument('--runsln', action='store_true')
     parser.add_argument('--fzf', metavar='project engine')
@@ -240,8 +239,6 @@ def action(arg):
         dumps(param)
     if arg.openproject:
         subprocess.Popen(get_project_cmd(param, arg.openproject), shell=True)
-    if arg.vsopen:
-        subprocess.call([get_devenv(), '/edit', arg.vsopen], shell=True)
     if arg.opensln:
         subprocess.call(get_sln_path(param), shell=True)
     if arg.runsln:
