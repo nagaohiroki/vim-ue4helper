@@ -100,11 +100,8 @@ def generate_project(param):
     os.chdir(work_dir)
     subprocess.call(generate_project_cmd, shell=True)
     subprocess.call(generate_project_cmd + ['-CMakefile'], shell=True)
-    cmake_proc = subprocess.Popen(get_compiler_cmd(), shell=True)
-    ctags_proc = subprocess.Popen(get_ctags_cmd(param), shell=True)
-    cmake_proc.wait()
-    ctags_proc.wait()
-    print('done')
+    subprocess.call(get_compiler_cmd(), shell=True)
+    subprocess.call(get_ctags_cmd(param), shell=True)
 
 
 def get_generate_project_cmd(param):
@@ -246,7 +243,7 @@ def action(arg):
     if arg.dumps:
         dumps(param)
     if arg.openproject:
-        subprocess.Popen(get_project_cmd(param, arg.openproject), shell=True)
+        subprocess.call(get_project_cmd(param, arg.openproject), shell=True)
     if arg.opensln:
         subprocess.call(get_sln_path(param), shell=True)
     if arg.runsln:

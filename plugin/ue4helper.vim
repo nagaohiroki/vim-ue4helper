@@ -23,7 +23,7 @@ EOF
 endfunction
 command! UE4Build execute 'term python ' . s:py_path . ' --build=Development'
 command! UE4BuildDebugGame execute 'term python ' . s:py_path . ' --build=DebugGame'
-command! UE4GenerateProject execute 'term ++close python ' . s:py_path  . ' --generateproject'
+command! UE4GenerateProject execute 'term python ' . s:py_path  . ' --generateproject'
 command! UE4OpenProject execute 'term ++hidden python ' . s:py_path  . ' --openproject=development'
 command! UE4OpenProjectDebugGame execute 'term ++hidden python ' . s:py_path  . ' --openproject=-debug'
 command! UE4Dumps call s:UE4Func('--dumps') | cwindow
