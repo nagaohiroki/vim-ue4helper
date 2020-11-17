@@ -99,9 +99,10 @@ def generate_project(param):
         generate_project_cmd = get_generate_project_cmd(param)
     os.chdir(work_dir)
     subprocess.call(generate_project_cmd, shell=True)
-    subprocess.call(generate_project_cmd + ['-CMakefile'], shell=True)
-    subprocess.call(get_compiler_cmd(), shell=True)
-    subprocess.call(get_ctags_cmd(param), shell=True)
+    # subprocess.call(generate_project_cmd + ['-CMakefile'], shell=True)
+    # subprocess.call(get_compiler_cmd(), shell=True)
+    subprocess.call(get_compile_commands_cmd(param), shell=True)
+    # subprocess.call(get_ctags_cmd(param), shell=True)
 
 
 def get_generate_project_cmd(param):
@@ -116,6 +117,24 @@ def get_compiler_cmd():
     if os.path.exists(vsdevcmd):
         return [vsdevcmd, '&'] + cmd
     return cmd
+
+
+def get_compile_commands_cmd(param):
+    engine = param['engine']
+    project = param['project']
+    return [
+        os.path.join(engine, 'Engine', 'Build', 'BatchFiles', 'Build.bat'),
+        '-mode=GenerateClangDatabase',
+        '-project=' + project,
+        get_project_name(param) + 'Editor',
+        'Win64',
+        'Development',
+        '&&',
+        'copy',
+        '/y',
+        engine.replace('/', '\\'),
+        os.path.dirname(project).replace('/', '\\')
+    ]
 
 
 def get_ctags_cmd(param):
@@ -153,13 +172,6 @@ def get_project_name(param):
 
 
 def get_vspath():
-    vs15 = get_vs15path()
-    if vs15:
-        return vs15
-    return get_vs14path()
-
-
-def get_vs15path():
     try:
         cmd = ['vswhere', '-format', 'json']
         proc = subprocess.check_output(cmd, encoding='cp932')
@@ -171,12 +183,6 @@ def get_vs15path():
     tag = 'installationPath'
     if tag in dic[0]:
         return dic[0][tag]
-
-
-def get_vs14path():
-    vs14path = os.getenv('VS140COMNTOOLS')
-    if vs14path:
-        return os.path.dirname(os.path.dirname(os.path.dirname(vs14path)))
 
 
 def get_project_cmd(param, config):
@@ -216,6 +222,7 @@ def info(param):
     print(get_project_name(param))
     print(get_vspath())
     print(get_project_cmd(param, None))
+    print(get_compile_commands_cmd(param))
 
 
 def arguments():
